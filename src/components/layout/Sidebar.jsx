@@ -15,7 +15,7 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import {
-  Dashboard as DashboardIcon,
+  Dashboard as LiveAnalysisIcon,
   CompareArrows as CompareIcon,
   Assessment as AssessmentIcon,
   Settings as SettingsIcon,
@@ -65,9 +65,9 @@ const Sidebar = ({ userRole }) => {
 
   const menuItems = [
     {
-      text: 'Dashboard',
-      icon: <DashboardIcon />,
-      path: '/dashboard',
+      text: 'LiveAnalysis',
+      icon: <LiveAnalysisIcon />,
+      path: '/LiveAnalysis',
       roles: ['coach', 'player'],
     },
     {

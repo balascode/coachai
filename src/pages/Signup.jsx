@@ -72,7 +72,7 @@ import React, { useState } from 'react';
                 CoachAI Signup
               </Typography>
               <Typography variant="subtitle1" color="text.secondary">
-                Create an account to access your dashboard
+                Create an account to access your LiveAnalysis
               </Typography>
             </Box>
             <Box component="form" onSubmit={handleSignup} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>

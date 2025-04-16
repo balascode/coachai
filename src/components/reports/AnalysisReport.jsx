@@ -14,12 +14,12 @@ import {
   LinearProgress,
   Paper,
   Table,
-  TableBody,
-  TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Chip
+  TableCell,
+  TableBody,
+  Chip,
 } from '@mui/material';
 import {
   Warning,
@@ -27,7 +27,7 @@ import {
   Videocam,
   Sports,
   Assessment,
-  Info
+  Info,
 } from '@mui/icons-material';
 
 const AnalysisReport = ({ results, userRole }) => {
@@ -51,13 +51,13 @@ const AnalysisReport = ({ results, userRole }) => {
     average_differences = [],
     suggestions = [],
     overall_accuracy = 0,
-    comparisonVideoUrl = null
+    comparisonVideoUrl = null,
   } = results;
 
   // Format the average differences for display
   const formattedDifferences = average_differences.map((diff, index) => ({
     landmark: `Landmark ${index + 1}`,
-    value: diff ? diff.toFixed(6) : 'N/A'
+    value: diff ? diff.toFixed(6) : 'N/A',
   }));
 
   return (
@@ -105,20 +105,22 @@ const AnalysisReport = ({ results, userRole }) => {
                 <Typography variant="h4" color="primary">
                   {movement_accuracy}%
                 </Typography>
-                <LinearProgress 
-                  variant="determinate" 
-                  value={movement_accuracy} 
-                  sx={{ 
+                <LinearProgress
+                  variant="determinate"
+                  value={movement_accuracy}
+                  sx={{
                     flexGrow: 1,
                     height: 10,
                     borderRadius: 5,
                     backgroundColor: theme.palette.grey[300],
                     '& .MuiLinearProgress-bar': {
-                      backgroundColor: 
-                        movement_accuracy > 75 ? theme.palette.success.main :
-                        movement_accuracy > 50 ? theme.palette.warning.main :
-                        theme.palette.error.main
-                    }
+                      backgroundColor:
+                        movement_accuracy > 75
+                          ? theme.palette.success.main
+                          : movement_accuracy > 50
+                          ? theme.palette.warning.main
+                          : theme.palette.error.main,
+                    },
                   }}
                 />
               </Box>
@@ -136,20 +138,22 @@ const AnalysisReport = ({ results, userRole }) => {
                 <Typography variant="h4" color="primary">
                   {overall_accuracy}%
                 </Typography>
-                <LinearProgress 
-                  variant="determinate" 
-                  value={overall_accuracy} 
-                  sx={{ 
+                <LinearProgress
+                  variant="determinate"
+                  value={overall_accuracy}
+                  sx={{
                     flexGrow: 1,
                     height: 10,
                     borderRadius: 5,
-                    backgroundColor: theme.palette.grey[300],
+                    backgroundColor: theme.palette.grey[900],
                     '& .MuiLinearProgress-bar': {
-                      backgroundColor: 
-                        overall_accuracy > 75 ? theme.palette.success.main :
-                        overall_accuracy > 50 ? theme.palette.warning.main :
-                        theme.palette.error.main
-                    }
+                      backgroundColor:
+                        overall_accuracy > 75
+                          ? theme.palette.success.main
+                          : overall_accuracy > 50
+                          ? theme.palette.warning.main
+                          : theme.palette.error.main,
+                    },
                   }}
                 />
               </Box>
@@ -174,14 +178,20 @@ const AnalysisReport = ({ results, userRole }) => {
               border: `1px solid ${theme.palette.divider}`
             }}>
               <video
-                src={`http://localhost:5000${comparisonVideoUrl}`}
                 controls
                 style={{ 
                   width: '100%', 
                   maxWidth: '800px',
                   backgroundColor: theme.palette.grey[900]
                 }}
-              />
+                onError={(e) => {
+                  console.error('Comparison video load error:', e.target.error, 'URL:', comparisonVideoUrl);
+                }}
+                onLoadedData={() => console.log('Comparison video loaded:', comparisonVideoUrl)}
+              >
+                <source src={comparisonVideoUrl} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
             </Box>
           </CardContent>
         </Card>

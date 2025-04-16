@@ -9,10 +9,10 @@ import {
   Chip,
 } from '@mui/material';
 import { Group, TrendingUp } from '@mui/icons-material';
-import PerformanceMetrics from '../dashboard/PerformanceMetrics';
-import ActivityFeed from '../dashboard/ActivityFeed';
+import PerformanceMetrics from '../LiveAnalysis/PerformanceMetrics';
+import ActivityFeed from '../LiveAnalysis/ActivityFeed';
 
-const CoachDashboard = ({ userRole }) => {
+const CoachLiveAnalysis = ({ userRole }) => {
   const theme = useTheme();
 
   const mockData = {
@@ -37,7 +37,7 @@ const CoachDashboard = ({ userRole }) => {
           WebkitTextFillColor: 'transparent',
         }}
       >
-        Coach Dashboard
+        Coach LiveAnalysis
       </Typography>
       <Typography variant="body2" color="text.secondary" gutterBottom>
         Overview of team performance and activities
@@ -119,4 +119,4 @@ const CoachDashboard = ({ userRole }) => {
   );
 };
 
-export default CoachDashboard;
+export default CoachLiveAnalysis;

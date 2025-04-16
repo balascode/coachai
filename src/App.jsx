@@ -5,7 +5,7 @@ import { lightTheme } from './theme/lightTheme';
 import { darkTheme } from './theme/darkTheme';
 import Layout from './components/layout/Layout';
 import Home from './pages/Home';
-import Dashboard from './pages/Dashboard';
+import LiveAnalysis from './pages/LiveAnalysis';
 import Analysis from './pages/Analysis';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
@@ -60,11 +60,11 @@ function AppContent() {
           }
         />
         <Route
-          path="/dashboard"
+          path="/LiveAnalysis"
           element={
             <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole}>
               <Layout userRole={userRole}>
-                <Dashboard userRole={userRole} />
+                <LiveAnalysis userRole={userRole} />
               </Layout>
             </ProtectedRoute>
           }

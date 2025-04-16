@@ -12,6 +12,8 @@ import {
   Tooltip,
   Divider,
   useTheme,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import {
   PlayArrow,
@@ -25,19 +27,21 @@ import {
   Timeline,
   FullscreenExit,
   Fullscreen,
+  Person,
 } from '@mui/icons-material';
 
-const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete, comparisonVideo }) => {
+const VideoComparison = ({ coachVideo, playerVideo, comparisonVideo, onAnalysisComplete, loading }) => {
   const theme = useTheme();
   const [isPlaying, setIsPlaying] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
-  const [showOverlay, setShowOverlay] = useState(true);
+  const [showSkeleton, setShowSkeleton] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [videoError, setVideoError] = useState(null);
 
   const coachVideoRef = useRef(null);
   const playerVideoRef = useRef(null);
@@ -45,9 +49,12 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete, comparis
   const containerRef = useRef(null);
 
   useEffect(() => {
+    console.log('VideoComparison props:', { coachVideo, playerVideo, comparisonVideo, loading });
+
     if (coachVideoRef.current && playerVideoRef.current) {
       coachVideoRef.current.onloadedmetadata = () => {
         setDuration(coachVideoRef.current.duration);
+        console.log('Coach video duration:', coachVideoRef.current.duration);
       };
 
       const updateTime = () => {
@@ -59,26 +66,31 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete, comparis
       coachVideoRef.current.addEventListener('timeupdate', updateTime);
 
       coachVideoRef.current.addEventListener('play', () => {
+        console.log('Playing videos');
         if (playerVideoRef.current) {
           playerVideoRef.current.currentTime = coachVideoRef.current.currentTime;
           playerVideoRef.current.play();
         }
-        if (comparisonVideoRef.current) {
+        if (comparisonVideoRef.current && showSkeleton) {
           comparisonVideoRef.current.currentTime = coachVideoRef.current.currentTime;
           comparisonVideoRef.current.play();
         }
+        setIsPlaying(true);
       });
 
       coachVideoRef.current.addEventListener('pause', () => {
+        console.log('Pausing videos');
         if (playerVideoRef.current) {
           playerVideoRef.current.pause();
         }
         if (comparisonVideoRef.current) {
           comparisonVideoRef.current.pause();
         }
+        setIsPlaying(false);
       });
 
       coachVideoRef.current.addEventListener('seeked', () => {
+        console.log('Seeking videos to:', coachVideoRef.current.currentTime);
         if (playerVideoRef.current) {
           playerVideoRef.current.currentTime = coachVideoRef.current.currentTime;
         }
@@ -86,6 +98,26 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete, comparis
           comparisonVideoRef.current.currentTime = coachVideoRef.current.currentTime;
         }
       });
+
+      coachVideoRef.current.addEventListener('error', () => {
+        setVideoError('Error loading coach video.');
+        console.error('Coach video error');
+      });
+
+      playerVideoRef.current.addEventListener('error', () => {
+        setVideoError('Error loading player video.');
+        console.error('Player video error');
+      });
+
+      if (comparisonVideoRef.current) {
+        comparisonVideoRef.current.addEventListener('error', () => {
+          setVideoError('Error loading comparison video. Please try analyzing again.');
+          console.error('Comparison video error:', comparisonVideo);
+        });
+        comparisonVideoRef.current.addEventListener('loadeddata', () => {
+          console.log('Comparison video loaded successfully:', comparisonVideo);
+        });
+      }
 
       return () => {
         if (coachVideoRef.current) {
@@ -93,7 +125,7 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete, comparis
         }
       };
     }
-  }, [coachVideo, playerVideo, comparisonVideo]);
+  }, [coachVideo, playerVideo, comparisonVideo, showSkeleton]);
 
   const togglePlay = () => {
     if (coachVideoRef.current) {
@@ -156,8 +188,9 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete, comparis
     setShowGrid(!showGrid);
   };
 
-  const toggleOverlay = () => {
-    setShowOverlay(!showOverlay);
+  const toggleSkeleton = () => {
+    setShowSkeleton(!showSkeleton);
+    console.log('Skeleton toggle:', !showSkeleton);
   };
 
   const toggleFullscreen = () => {
@@ -199,30 +232,39 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete, comparis
         backgroundColor: theme.palette.background.paper,
         transition: 'all 0.3s ease',
         '&:hover': {
-          boxShadow: theme.palette.mode === 'dark'
-            ? '0 8px 32px rgba(0,0,0,0.3)'
-            : '0 8px 32px rgba(0,0,0,0.1)',
+          boxShadow:
+            theme.palette.mode === 'dark'
+              ? '0 8px 32px rgba(0,0,0,0.3)'
+              : '0 8px 32px rgba(0,0,0,0.1)',
         },
       }}
       ref={containerRef}
     >
       <CardContent sx={{ p: 0 }}>
         <Box sx={{ p: 2, backgroundColor: theme.palette.background.default }}>
-          <Typography variant="h6" fontWeight="bold">Video Analysis</Typography>
+          <Typography variant="h6" fontWeight="bold">
+            Video Analysis
+          </Typography>
           <Typography variant="body2" color="text.secondary">
             Compare your form with a professional
           </Typography>
         </Box>
 
+        {videoError && (
+          <Alert severity="error" sx={{ m: 2 }} onClose={() => setVideoError(null)}>
+            {videoError}
+          </Alert>
+        )}
+
         <Grid container spacing={0}>
-          <Grid item xs={12} sx={{ position: 'relative', backgroundColor: 'black' }}>
+          <Grid item xs={12} sx={{ backgroundColor: 'black' }}>
             <Box
               sx={{
                 display: 'flex',
                 flexDirection: { xs: 'column', md: 'row' },
                 position: 'relative',
                 width: '100%',
-                height: { xs: 'auto', md: 500 },
+                height: { xs: 'auto', md: 400 },
               }}
             >
               <Box
@@ -254,6 +296,7 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete, comparis
                   style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                   onPlay={() => setIsPlaying(true)}
                   onPause={() => setIsPlaying(false)}
+                  loading="lazy"
                 />
                 {showGrid && (
                   <Box
@@ -299,6 +342,7 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete, comparis
                   ref={playerVideoRef}
                   src={playerVideo}
                   style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                  loading="lazy"
                 />
                 {showGrid && (
                   <Box
@@ -321,9 +365,9 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete, comparis
             </Box>
           </Grid>
 
-          {comparisonVideo && (
-            <Grid item xs={12} sx={{ backgroundColor: 'black', mt: 2 }}>
-              <Box sx={{ position: 'relative' }}>
+          <Grid item xs={12} sx={{ backgroundColor: 'black', mt: 2, position: 'relative' }}>
+            {comparisonVideo ? (
+              <>
                 <Typography
                   variant="caption"
                   sx={{
@@ -337,17 +381,44 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete, comparis
                     zIndex: 1,
                   }}
                 >
-                  COMPARISON
+                  COMPARISON WITH SKELETONS
                 </Typography>
                 <video
                   ref={comparisonVideoRef}
-                  src={`http://localhost:5000${comparisonVideo}`}
-                  style={{ width: '100%', height: 'auto', objectFit: 'contain' }}
-                  controls
+                  src={comparisonVideo}
+                  style={{ width: '100%', height: 'auto', objectFit: 'contain', display: showSkeleton ? 'block' : 'none' }}
+                  controls={false}
+                  muted
+                  loading="lazy"
+                  onError={() => console.error('Failed to load comparison video:', comparisonVideo)}
                 />
+              </>
+            ) : (
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: 200,
+                  color: 'white',
+                }}
+              >
+                {loading ? (
+                  <>
+                    <CircularProgress sx={{ color: 'white' }} />
+                    <Typography variant="body2" sx={{ mt: 2 }}>
+                      Generating comparison video...
+                    </Typography>
+                  </>
+                ) : (
+                  <Typography variant="body2">
+                    Click "Analyze Performance" to generate the comparison video.
+                  </Typography>
+                )}
               </Box>
-            </Grid>
-          )}
+            )}
+          </Grid>
 
           <Grid item xs={12}>
             <Box sx={{ p: 2 }}>
@@ -360,31 +431,44 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete, comparis
                   value={(currentTime / duration) * 100 || 0}
                   onChange={handleSliderChange}
                   sx={{ mx: 2, flex: 1 }}
+                  aria-label="Video playback progress"
                 />
                 <Typography variant="body2" sx={{ ml: 1 }}>
                   {formatTime(duration)}
                 </Typography>
               </Box>
 
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 2,
+                }}
+              >
                 <Box sx={{ display: 'flex', gap: 1 }}>
                   <Tooltip title="Restart">
-                    <IconButton onClick={restartVideo}>
+                    <IconButton onClick={restartVideo} aria-label="Restart video">
                       <Replay />
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="Previous 5s">
-                    <IconButton onClick={skipBackward}>
+                    <IconButton onClick={skipBackward} aria-label="Skip backward 5 seconds">
                       <SkipPrevious />
                     </IconButton>
                   </Tooltip>
                   <Tooltip title={isPlaying ? 'Pause' : 'Play'}>
-                    <IconButton onClick={togglePlay} color="primary">
+                    <IconButton
+                      onClick={togglePlay}
+                      color="primary"
+                      aria-label={isPlaying ? 'Pause video' : 'Play video'}
+                    >
                       {isPlaying ? <Pause /> : <PlayArrow />}
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="Next 5s">
-                    <IconButton onClick={skipForward}>
+                    <IconButton onClick={skipForward} aria-label="Skip forward 5 seconds">
                       <SkipNext />
                     </IconButton>
                   </Tooltip>
@@ -392,22 +476,29 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete, comparis
 
                 <Box sx={{ display: 'flex', gap: 1 }}>
                   <Tooltip title={showGrid ? 'Hide Grid' : 'Show Grid'}>
-                    <IconButton onClick={toggleGrid}>
+                    <IconButton onClick={toggleGrid} aria-label={showGrid ? 'Hide grid' : 'Show grid'}>
                       {showGrid ? <GridOff /> : <GridOn />}
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title={showOverlay ? 'Hide Motion Analysis' : 'Show Motion Analysis'}>
-                    <IconButton onClick={toggleOverlay} color={showOverlay ? 'primary' : 'default'}>
-                      <Compare />
+                  <Tooltip title={showSkeleton ? 'Hide Skeletons' : 'Show Skeletons'}>
+                    <IconButton
+                      onClick={toggleSkeleton}
+                      color={showSkeleton ? 'primary' : 'default'}
+                      aria-label={showSkeleton ? 'Hide skeletons' : 'Show skeletons'}
+                    >
+                      <Person />
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="View Timeline">
-                    <IconButton>
+                    <IconButton aria-label="View timeline">
                       <Timeline />
                     </IconButton>
                   </Tooltip>
                   <Tooltip title={fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}>
-                    <IconButton onClick={toggleFullscreen}>
+                    <IconButton
+                      onClick={toggleFullscreen}
+                      aria-label={fullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+                    >
                       {fullscreen ? <FullscreenExit /> : <Fullscreen />}
                     </IconButton>
                   </Tooltip>
@@ -424,10 +515,12 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete, comparis
                   variant="contained"
                   startIcon={<Compare />}
                   onClick={startAnalysis}
+                  disabled={loading}
                   sx={{
                     borderRadius: 3,
                     px: 4,
                   }}
+                  aria-label="Analyze performance"
                 >
                   Analyze Performance
                 </Button>
@@ -438,13 +531,17 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete, comparis
                   <Typography variant="body2" sx={{ mb: 1, textAlign: 'center' }}>
                     Analyzing... {progress}%
                   </Typography>
-                  <LinearProgress variant="determinate" value={progress} sx={{ height: 8, borderRadius: 4 }} />
+                  <LinearProgress
+                    variant="determinate"
+                    value={progress}
+                    sx={{ height: 8, borderRadius: 4 }}
+                  />
                 </Box>
               )}
 
               {analysisComplete && (
                 <Typography variant="body1" color="primary" sx={{ fontWeight: 'bold' }}>
-                  Analysis Complete! View detailed results below.
+                  Analysis Complete! View detailed results in the next step.
                 </Typography>
               )}
             </Box>

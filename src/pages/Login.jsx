@@ -99,7 +99,7 @@ const Login = ({ setIsLoggedIn, setUserRole }) => {
               CoachAI Login
             </Typography>
             <Typography variant="subtitle1" color="text.secondary">
-              Sign in to access your performance dashboard
+              Sign in to access your performance LiveAnalysis
             </Typography>
           </Box>
 
