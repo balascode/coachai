@@ -19,12 +19,14 @@ import {
   SportsKabaddi as SportsIcon,
 } from '@mui/icons-material';
 import ThemeToggle from './ThemeToggle';
-import { ThemeContext } from '../../contexts/ThemeContext';
+import { useThemeContext } from '../../contexts/ThemeContext'; // Updated to useThemeContext
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function Header({ toggleSidebar }) {
   const [anchorEl, setAnchorEl] = useState(null);
   const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = useState(null);
-  const { isDarkMode } = useContext(ThemeContext);
+  const { isDarkMode } = useThemeContext(); // Updated hook
+  const { user } = useAuth();
 
   const isMenuOpen = Boolean(anchorEl);
   const isMobileMenuOpen = Boolean(mobileMoreAnchorEl);
@@ -158,15 +160,6 @@ export default function Header({ toggleSidebar }) {
 
           <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
             <ThemeToggle />
-            {/* <IconButton
-              size="large"
-              aria-label="show new notifications"
-              color="inherit"
-            >
-              <Badge badgeContent={5} color="error">
-                <NotificationsIcon />
-              </Badge>
-            </IconButton> */}
             <Tooltip title="Account settings">
               <IconButton
                 size="large"
@@ -178,8 +171,8 @@ export default function Header({ toggleSidebar }) {
                 sx={{ ml: 1 }}
               >
                 <Avatar
-                  alt="User Avatar"
-                  src="/static/images/avatar/1.jpg"
+                  alt={user ? user.email : 'User Avatar'}
+                  src={user ? `/static/images/avatar/${user.uid.slice(-1)}.jpg` : '/static/images/avatar/1.jpg'}
                   sx={{ width: 32, height: 32 }}
                 />
               </IconButton>

@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
-import { ThemeContext } from './contexts/ThemeContext';
 import { lightTheme } from './theme/lightTheme';
 import { darkTheme } from './theme/darkTheme';
 import Layout from './components/layout/Layout';
@@ -11,47 +10,106 @@ import Analysis from './pages/Analysis';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
 import './App.css';
+import { auth } from './firebaseConfig';
+import { onAuthStateChanged } from 'firebase/auth';
+import { ThemeProvider as CustomThemeProvider, useThemeContext } from './contexts/ThemeContext';
 
-function App() {
-  const [isDarkMode, setIsDarkMode] = useState(
-    localStorage.getItem('theme') === 'dark' || false
-  );
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userRole, setUserRole] = useState(null); // 'coach' or 'player'
+const ProtectedRoute = ({ isLoggedIn, userRole, children }) => {
+  return isLoggedIn ? children : <Navigate to="/login" replace />;
+};
+
+function AppContent() {
+  const { isDarkMode } = useThemeContext();
+  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+  const [userRole, setUserRole] = React.useState(null);
 
   useEffect(() => {
-    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
-  }, [isDarkMode]);
-
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-  };
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsLoggedIn(!!user);
+      if (user) {
+        setUserRole(user.uid.endsWith('coach') ? 'coach' : 'player');
+      }
+    });
+    return unsubscribe;
+  }, []);
 
   const theme = isDarkMode ? darkTheme : lightTheme;
 
   return (
-    <ThemeContext.Provider value={{ isDarkMode, toggleTheme }}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <BrowserRouter>
-          {!isLoggedIn ? (
-            <Login setIsLoggedIn={setIsLoggedIn} setUserRole={setUserRole} />
-          ) : (
-            <Layout userRole={userRole}>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/dashboard" element={<Dashboard userRole={userRole} />} />
-                <Route path="/analysis" element={<Analysis userRole={userRole} />} />
-                <Route path="/reports" element={<Reports userRole={userRole} />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </Layout>
-          )}
-        </BrowserRouter>
-      </ThemeProvider>
-    </ThemeContext.Provider>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Routes>
+        <Route
+          path="/login"
+          element={<Login setIsLoggedIn={setIsLoggedIn} setUserRole={setUserRole} />}
+        />
+        <Route
+          path="/signup"
+          element={<Signup setIsLoggedIn={setIsLoggedIn} setUserRole={setUserRole} />}
+        />
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole}>
+              <Layout userRole={userRole}>
+                <Home />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole}>
+              <Layout userRole={userRole}>
+                <Dashboard userRole={userRole} />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/analysis"
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole}>
+              <Layout userRole={userRole}>
+                <Analysis userRole={userRole} />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole}>
+              <Layout userRole={userRole}>
+                <Reports userRole={userRole} />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole}>
+              <Layout userRole={userRole}>
+                <Settings />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/home" />} />
+      </Routes>
+    </ThemeProvider>
+  );
+}
+
+function App() {
+  return (
+    <CustomThemeProvider>
+      <AppContent />
+    </CustomThemeProvider>
   );
 }
 

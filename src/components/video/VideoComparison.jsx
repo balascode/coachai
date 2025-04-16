@@ -27,7 +27,7 @@ import {
   Fullscreen,
 } from '@mui/icons-material';
 
-const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete }) => {
+const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete, comparisonVideo }) => {
   const theme = useTheme();
   const [isPlaying, setIsPlaying] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
@@ -41,7 +41,7 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete }) => {
 
   const coachVideoRef = useRef(null);
   const playerVideoRef = useRef(null);
-  const canvasRef = useRef(null);
+  const comparisonVideoRef = useRef(null);
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -63,11 +63,18 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete }) => {
           playerVideoRef.current.currentTime = coachVideoRef.current.currentTime;
           playerVideoRef.current.play();
         }
+        if (comparisonVideoRef.current) {
+          comparisonVideoRef.current.currentTime = coachVideoRef.current.currentTime;
+          comparisonVideoRef.current.play();
+        }
       });
 
       coachVideoRef.current.addEventListener('pause', () => {
         if (playerVideoRef.current) {
           playerVideoRef.current.pause();
+        }
+        if (comparisonVideoRef.current) {
+          comparisonVideoRef.current.pause();
         }
       });
 
@@ -75,30 +82,10 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete }) => {
         if (playerVideoRef.current) {
           playerVideoRef.current.currentTime = coachVideoRef.current.currentTime;
         }
-      });
-
-      if (showOverlay && canvasRef.current && analyzing) {
-        const ctx = canvasRef.current.getContext('2d');
-        const drawOverlay = () => {
-          if (!coachVideoRef.current || !playerVideoRef.current || !canvasRef.current) return;
-
-          ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-
-          if (showOverlay) {
-            drawMockSkeleton(ctx, coachVideoRef.current.width, coachVideoRef.current.height, '#4caf50');
-            drawMockSkeleton(ctx, playerVideoRef.current.width, playerVideoRef.current.height, '#2196f3', 10);
-            highlightDifferences(ctx, coachVideoRef.current.width, coachVideoRef.current.height);
-          }
-
-          if (isPlaying) {
-            requestAnimationFrame(drawOverlay);
-          }
-        };
-
-        if (isPlaying) {
-          drawOverlay();
+        if (comparisonVideoRef.current) {
+          comparisonVideoRef.current.currentTime = coachVideoRef.current.currentTime;
         }
-      }
+      });
 
       return () => {
         if (coachVideoRef.current) {
@@ -106,61 +93,7 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete }) => {
         }
       };
     }
-  }, [coachVideo, playerVideo, isPlaying, showOverlay, analyzing]);
-
-  const drawMockSkeleton = (ctx, width, height, color, offset = 0) => {
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
-
-    ctx.beginPath();
-    ctx.arc(width / 2 + offset, height / 4, 30, 0, Math.PI * 2);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(width / 2 + offset, height / 4 + 30);
-    ctx.lineTo(width / 2 + offset, height / 4 + 150);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(width / 2 + offset, height / 4 + 50);
-    ctx.lineTo(width / 2 - 80 + offset, height / 4 + 70 + Math.sin(Date.now() / 500) * 10);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(width / 2 + offset, height / 4 + 50);
-    ctx.lineTo(width / 2 + 80 + offset, height / 4 + 70 + Math.sin(Date.now() / 500 + Math.PI) * 10);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(width / 2 + offset, height / 4 + 150);
-    ctx.lineTo(width / 2 - 40 + offset, height / 4 + 280);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(width / 2 + offset, height / 4 + 150);
-    ctx.lineTo(width / 2 + 40 + offset, height / 4 + 280);
-    ctx.stroke();
-  };
-
-  const highlightDifferences = (ctx, width, height) => {
-    const time = Date.now() / 1000;
-    if (Math.sin(time) > 0.7) {
-      ctx.strokeStyle = '#ff4444';
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.arc(width / 2 + 80, height / 4 + 70, 20, 0, Math.PI * 2);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(width / 2 + 100, height / 4 + 70);
-      ctx.lineTo(width / 2 + 130, height / 4 + 55);
-      ctx.stroke();
-
-      ctx.fillStyle = '#ff4444';
-      ctx.font = '16px Arial';
-      ctx.fillText('Arm angle incorrect', width / 2 + 140, height / 4 + 60);
-    }
-  };
+  }, [coachVideo, playerVideo, comparisonVideo]);
 
   const togglePlay = () => {
     if (coachVideoRef.current) {
@@ -180,6 +113,9 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete }) => {
 
       if (playerVideoRef.current) {
         playerVideoRef.current.currentTime = coachVideoRef.current.currentTime;
+      }
+      if (comparisonVideoRef.current) {
+        comparisonVideoRef.current.currentTime = coachVideoRef.current.currentTime;
       }
     }
   };
@@ -210,6 +146,9 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete }) => {
       if (playerVideoRef.current) {
         playerVideoRef.current.currentTime = 0;
       }
+      if (comparisonVideoRef.current) {
+        comparisonVideoRef.current.currentTime = 0;
+      }
     }
   };
 
@@ -235,6 +174,7 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete }) => {
 
   const startAnalysis = () => {
     setAnalyzing(true);
+    setProgress(0);
 
     let progressValue = 0;
     const interval = setInterval(() => {
@@ -245,19 +185,7 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete }) => {
         clearInterval(interval);
         setAnalysisComplete(true);
         setAnalyzing(false);
-
-        if (onAnalysisComplete) {
-          onAnalysisComplete({
-            performance: 85,
-            technique: 78,
-            accuracy: 92,
-            suggestions: [
-              'Keep your elbow higher during the backswing motion',
-              'Maintain a more consistent follow-through',
-              'Work on the timing between upper and lower body',
-            ],
-          });
-        }
+        onAnalysisComplete();
       }
     }, 100);
   };
@@ -286,21 +214,23 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete }) => {
           </Typography>
         </Box>
 
-        <Grid container>
+        <Grid container spacing={0}>
           <Grid item xs={12} sx={{ position: 'relative', backgroundColor: 'black' }}>
             <Box
               sx={{
                 display: 'flex',
+                flexDirection: { xs: 'column', md: 'row' },
                 position: 'relative',
                 width: '100%',
-                height: 500,
+                height: { xs: 'auto', md: 500 },
               }}
             >
               <Box
                 sx={{
                   flex: 1,
                   position: 'relative',
-                  borderRight: '1px solid rgba(255,255,255,0.2)',
+                  borderRight: { md: '1px solid rgba(255,255,255,0.2)' },
+                  borderBottom: { xs: '1px solid rgba(255,255,255,0.2)', md: 'none' },
                 }}
               >
                 <Typography
@@ -388,24 +318,36 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete }) => {
                   />
                 )}
               </Box>
-
-              {showOverlay && (
-                <canvas
-                  ref={canvasRef}
-                  width={1000}
-                  height={500}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    pointerEvents: 'none',
-                  }}
-                />
-              )}
             </Box>
           </Grid>
+
+          {comparisonVideo && (
+            <Grid item xs={12} sx={{ backgroundColor: 'black', mt: 2 }}>
+              <Box sx={{ position: 'relative' }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    position: 'absolute',
+                    top: 10,
+                    left: 10,
+                    color: 'white',
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    padding: '2px 8px',
+                    borderRadius: 1,
+                    zIndex: 1,
+                  }}
+                >
+                  COMPARISON
+                </Typography>
+                <video
+                  ref={comparisonVideoRef}
+                  src={`http://localhost:5000${comparisonVideo}`}
+                  style={{ width: '100%', height: 'auto', objectFit: 'contain' }}
+                  controls
+                />
+              </Box>
+            </Grid>
+          )}
 
           <Grid item xs={12}>
             <Box sx={{ p: 2 }}>
@@ -424,8 +366,8 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete }) => {
                 </Typography>
               </Box>
 
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+                <Box sx={{ display: 'flex', gap: 1 }}>
                   <Tooltip title="Restart">
                     <IconButton onClick={restartVideo}>
                       <Replay />
@@ -448,7 +390,7 @@ const VideoComparison = ({ coachVideo, playerVideo, onAnalysisComplete }) => {
                   </Tooltip>
                 </Box>
 
-                <Box>
+                <Box sx={{ display: 'flex', gap: 1 }}>
                   <Tooltip title={showGrid ? 'Hide Grid' : 'Show Grid'}>
                     <IconButton onClick={toggleGrid}>
                       {showGrid ? <GridOff /> : <GridOn />}
