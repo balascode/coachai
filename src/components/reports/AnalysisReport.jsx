@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -20,6 +20,9 @@ import {
   TableCell,
   TableBody,
   Chip,
+  Button,
+  Link,
+  Alert,
 } from '@mui/material';
 import {
   Warning,
@@ -28,10 +31,30 @@ import {
   Sports,
   Assessment,
   Info,
+  TableChart,
+  BarChart,
+  Refresh,
 } from '@mui/icons-material';
 
-const AnalysisReport = ({ results, userRole }) => {
+const AnalysisReport = ({ results, userRole, onReset }) => {
   const theme = useTheme();
+  const [videoError, setVideoError] = useState(null);
+
+  useEffect(() => {
+    console.log('AnalysisReport results:', results);
+    // Test if plot images load
+    if (results?.avgErrorPlotUrl) {
+      fetch(results.avgErrorPlotUrl)
+        .then((response) => {
+          if (!response.ok) {
+            console.error(`Failed to load avgErrorPlotUrl: ${response.status} ${response.statusText}`);
+          } else {
+            console.log('avgErrorPlotUrl loaded successfully:', results.avgErrorPlotUrl);
+          }
+        })
+        .catch((error) => console.error('Error fetching avgErrorPlotUrl:', error));
+    }
+  }, [results]);
 
   if (!results) {
     return (
@@ -43,7 +66,6 @@ const AnalysisReport = ({ results, userRole }) => {
     );
   }
 
-  // Extract data from results or use defaults
   const {
     teacher_frames = 0,
     student_frames = 0,
@@ -51,14 +73,26 @@ const AnalysisReport = ({ results, userRole }) => {
     average_differences = [],
     suggestions = [],
     overall_accuracy = 0,
-    comparisonVideoUrl = null,
+    normalVideoUrl = null,
+    dynamicVideoUrl = null,
+    csvUrl = null,
+    avgErrorPlotUrl = null,
+    jointErrorPlotUrls = [],
+    region_scores = {},
   } = results;
 
-  // Format the average differences for display
   const formattedDifferences = average_differences.map((diff, index) => ({
     landmark: `Landmark ${index + 1}`,
     value: diff ? diff.toFixed(6) : 'N/A',
   }));
+
+  const handleRetry = () => {
+    if (onReset) {
+      onReset(); // Reset to start a new analysis
+    } else {
+      window.location.reload(); // Fallback: reload the page
+    }
+  };
 
   return (
     <Box sx={{ p: { xs: 1, sm: 2 } }}>
@@ -75,6 +109,21 @@ const AnalysisReport = ({ results, userRole }) => {
         Pose Analysis Report
       </Typography>
       <Divider sx={{ my: 2 }} />
+
+      {videoError && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setVideoError(null)}>
+          {videoError}
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<Refresh />}
+            onClick={handleRetry}
+            sx={{ ml: 2 }}
+          >
+            Retry Analysis
+          </Button>
+        </Alert>
+      )}
 
       {/* Key Metrics Section */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
@@ -162,37 +211,204 @@ const AnalysisReport = ({ results, userRole }) => {
         </Grid>
       </Grid>
 
-      {/* Comparison Video Section */}
-      {comparisonVideoUrl && (
+      {/* Region Scores */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+            <Assessment sx={{ mr: 1, color: theme.palette.primary.main }} />
+            Per-Region Error Scores
+          </Typography>
+          <Grid container spacing={2}>
+            {Object.entries(region_scores).map(([region, score]) => (
+              <Grid item xs={12} sm={4} key={region}>
+                <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                  {region.replace('_', ' ')}: {score.toFixed(3)}
+                </Typography>
+              </Grid>
+            ))}
+          </Grid>
+        </CardContent>
+      </Card>
+
+      {/* Comparison Videos Section */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+            <Videocam sx={{ mr: 1, color: theme.palette.primary.main }} />
+            Comparison Videos
+          </Typography>
+          <Grid container spacing={2}>
+            {normalVideoUrl ? (
+              <Grid item xs={12} md={6}>
+                <Typography variant="body2" gutterBottom>
+                  Normal Comparison
+                </Typography>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                    border: `1px solid ${theme.palette.divider}`,
+                  }}
+                >
+                  <video
+                    controls
+                    preload="metadata"
+                    style={{ width: '100%', backgroundColor: theme.palette.grey[900] }}
+                    onError={(e) => {
+                      const errorMsg = e.target.error
+                        ? `Failed to load normal comparison video: ${e.target.error.message}`
+                        : 'Failed to load normal comparison video: Unable to access video file. Please check server logs.';
+                      setVideoError(errorMsg);
+                      console.error('Normal video load error:', e.target.error || 'Unknown error', 'URL:', normalVideoUrl);
+                    }}
+                    onLoadedData={() => console.log('Normal video loaded successfully:', normalVideoUrl)}
+                  >
+                    <source src={normalVideoUrl} type="video/mp4" />
+                    <Typography variant="body2" color="error">
+                      Your browser cannot play this video. Please try a different browser or contact support.
+                    </Typography>
+                  </video>
+                </Box>
+              </Grid>
+            ) : (
+              <Grid item xs={12} md={6}>
+                <Typography variant="body2" color="error">
+                  Normal comparison video not available.
+                </Typography>
+              </Grid>
+            )}
+            {dynamicVideoUrl ? (
+              <Grid item xs={12} md={6}>
+                <Typography variant="body2" gutterBottom>
+                  Dynamic Comparison
+                </Typography>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                    border: `1px solid ${theme.palette.divider}`,
+                  }}
+                >
+                  <video
+                    controls
+                    preload="metadata"
+                    style={{ width: '100%', backgroundColor: theme.palette.grey[900] }}
+                    onError={(e) => {
+                      const errorMsg = e.target.error
+                        ? `Failed to load dynamic comparison video: ${e.target.error.message}`
+                        : 'Failed to load dynamic comparison video: Unable to access video file. Please check server logs.';
+                      setVideoError(errorMsg);
+                      console.error('Dynamic video load error:', e.target.error || 'Unknown error', 'URL:', dynamicVideoUrl);
+                    }}
+                    onLoadedData={() => console.log('Dynamic video loaded successfully:', dynamicVideoUrl)}
+                  >
+                    <source src={dynamicVideoUrl} type="video/mp4" />
+                    <Typography variant="body2" color="error">
+                      Your browser cannot play this video. Please try a different browser or contact support.
+                    </Typography>
+                  </video>
+                </Box>
+              </Grid>
+            ) : (
+              <Grid item xs={12} md={6}>
+                <Typography variant="body2" color="error">
+                  Dynamic comparison video not available.
+                </Typography>
+              </Grid>
+            )}
+          </Grid>
+        </CardContent>
+      </Card>
+
+      {/* CSV Download */}
+      {csvUrl && (
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-              <Videocam sx={{ mr: 1, color: theme.palette.primary.main }} />
-              Comparison Video
+              <TableChart sx={{ mr: 1, color: theme.palette.primary.main }} />
+              Detailed Differences
             </Typography>
-            <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'center',
-              borderRadius: 1,
-              overflow: 'hidden',
-              border: `1px solid ${theme.palette.divider}`
-            }}>
-              <video
-                controls
-                style={{ 
-                  width: '100%', 
-                  maxWidth: '800px',
-                  backgroundColor: theme.palette.grey[900]
-                }}
-                onError={(e) => {
-                  console.error('Comparison video load error:', e.target.error, 'URL:', comparisonVideoUrl);
-                }}
-                onLoadedData={() => console.log('Comparison video loaded:', comparisonVideoUrl)}
-              >
-                <source src={comparisonVideoUrl} type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
+            <Button
+              variant="outlined"
+              href={csvUrl}
+              download
+              startIcon={<TableChart />}
+              sx={{ mt: 1 }}
+              onError={(e) => console.error('CSV download error:', e, 'URL:', csvUrl)}
+            >
+              Download CSV
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Average Error Plot */}
+      {avgErrorPlotUrl && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+              <BarChart sx={{ mr: 1, color: theme.palette.primary.main }} />
+              Average Error per Joint
+            </Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                borderRadius: 1,
+                overflow: 'hidden',
+                border: `1px solid ${theme.palette.divider}`,
+              }}
+            >
+              <img
+                src={avgErrorPlotUrl}
+                alt="Average Error per Joint"
+                style={{ maxWidth: '100%', height: 'auto' }}
+                onError={(e) => console.error('Average error plot load error:', e.target.error, 'URL:', avgErrorPlotUrl)}
+                onLoad={() => console.log('Average error plot loaded successfully:', avgErrorPlotUrl)}
+              />
             </Box>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Joint Error Plots */}
+      {jointErrorPlotUrls.length > 0 && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+              <BarChart sx={{ mr: 1, color: theme.palette.primary.main }} />
+              Joint Errors Over Time
+            </Typography>
+            <Grid container spacing={2}>
+              {jointErrorPlotUrls.map((url, index) => (
+                <Grid item xs={12} md={4} key={index}>
+                  <Typography variant="body2" gutterBottom>
+                    {url.split('_').pop().replace('.png', '')}
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      borderRadius: 1,
+                      overflow: 'hidden',
+                      border: `1px solid ${theme.palette.divider}`,
+                    }}
+                  >
+                    <img
+                      src={url}
+                      alt={`Error over time for ${url.split('_').pop().replace('.png', '')}`}
+                      style={{ maxWidth: '100%', height: 'auto' }}
+                      onError={(e) => console.error('Joint error plot load error:', e.target.error, 'URL:', url)}
+                      onLoad={() => console.log('Joint error plot loaded successfully:', url)}
+                    />
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
           </CardContent>
         </Card>
       )}
@@ -219,12 +435,15 @@ const AnalysisReport = ({ results, userRole }) => {
                       {row.landmark}
                     </TableCell>
                     <TableCell align="right">
-                      <Chip 
-                        label={row.value} 
+                      <Chip
+                        label={row.value}
                         size="small"
                         color={
-                          parseFloat(row.value) > 0.1 ? 'error' : 
-                          parseFloat(row.value) > 0.05 ? 'warning' : 'success'
+                          parseFloat(row.value) > 0.1
+                            ? 'error'
+                            : parseFloat(row.value) > 0.05
+                            ? 'warning'
+                            : 'success'
                         }
                       />
                     </TableCell>
@@ -250,19 +469,21 @@ const AnalysisReport = ({ results, userRole }) => {
                   <ListItemIcon sx={{ minWidth: 36 }}>
                     <Warning color="error" />
                   </ListItemIcon>
-                  <ListItemText 
-                    primary={suggestion} 
+                  <ListItemText
+                    primary={suggestion}
                     primaryTypographyProps={{ variant: 'body2' }}
                   />
                 </ListItem>
               ))}
             </List>
           ) : (
-            <Paper sx={{ 
-              p: 2, 
-              backgroundColor: theme.palette.success.light,
-              color: theme.palette.success.dark
-            }}>
+            <Paper
+              sx={{
+                p: 2,
+                backgroundColor: theme.palette.success.light,
+                color: theme.palette.success.dark,
+              }}
+            >
               <Typography variant="body2">
                 Great job! Your form matches the coach's demonstration well. Keep practicing to maintain consistency.
               </Typography>

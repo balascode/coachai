@@ -30,7 +30,7 @@ import {
   Person,
 } from '@mui/icons-material';
 
-const VideoComparison = ({ coachVideo, playerVideo, comparisonVideo, onAnalysisComplete, loading }) => {
+const VideoComparison = ({ coachVideo, playerVideo, normalVideoUrl, dynamicVideoUrl, onAnalysisComplete, loading }) => {
   const theme = useTheme();
   const [isPlaying, setIsPlaying] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
@@ -49,7 +49,7 @@ const VideoComparison = ({ coachVideo, playerVideo, comparisonVideo, onAnalysisC
   const containerRef = useRef(null);
 
   useEffect(() => {
-    console.log('VideoComparison props:', { coachVideo, playerVideo, comparisonVideo, loading });
+    console.log('VideoComparison props:', { coachVideo, playerVideo, normalVideoUrl, dynamicVideoUrl, loading });
 
     if (coachVideoRef.current && playerVideoRef.current) {
       coachVideoRef.current.onloadedmetadata = () => {
@@ -71,7 +71,7 @@ const VideoComparison = ({ coachVideo, playerVideo, comparisonVideo, onAnalysisC
           playerVideoRef.current.currentTime = coachVideoRef.current.currentTime;
           playerVideoRef.current.play();
         }
-        if (comparisonVideoRef.current && showSkeleton) {
+        if (comparisonVideoRef.current && showSkeleton && normalVideoUrl) {
           comparisonVideoRef.current.currentTime = coachVideoRef.current.currentTime;
           comparisonVideoRef.current.play();
         }
@@ -94,28 +94,28 @@ const VideoComparison = ({ coachVideo, playerVideo, comparisonVideo, onAnalysisC
         if (playerVideoRef.current) {
           playerVideoRef.current.currentTime = coachVideoRef.current.currentTime;
         }
-        if (comparisonVideoRef.current) {
+        if (comparisonVideoRef.current && normalVideoUrl) {
           comparisonVideoRef.current.currentTime = coachVideoRef.current.currentTime;
         }
       });
 
-      coachVideoRef.current.addEventListener('error', () => {
+      coachVideoRef.current.addEventListener('error', (e) => {
         setVideoError('Error loading coach video.');
-        console.error('Coach video error');
+        console.error('Coach video error:', e.target.error);
       });
 
-      playerVideoRef.current.addEventListener('error', () => {
+      playerVideoRef.current.addEventListener('error', (e) => {
         setVideoError('Error loading player video.');
-        console.error('Player video error');
+        console.error('Player video error:', e.target.error);
       });
 
       if (comparisonVideoRef.current) {
-        comparisonVideoRef.current.addEventListener('error', () => {
+        comparisonVideoRef.current.addEventListener('error', (e) => {
           setVideoError('Error loading comparison video. Please try analyzing again.');
-          console.error('Comparison video error:', comparisonVideo);
+          console.error('Comparison video error:', normalVideoUrl, e.target.error);
         });
         comparisonVideoRef.current.addEventListener('loadeddata', () => {
-          console.log('Comparison video loaded successfully:', comparisonVideo);
+          console.log('Comparison video loaded successfully:', normalVideoUrl);
         });
       }
 
@@ -125,7 +125,7 @@ const VideoComparison = ({ coachVideo, playerVideo, comparisonVideo, onAnalysisC
         }
       };
     }
-  }, [coachVideo, playerVideo, comparisonVideo, showSkeleton]);
+  }, [coachVideo, playerVideo, normalVideoUrl, showSkeleton]);
 
   const togglePlay = () => {
     if (coachVideoRef.current) {
@@ -146,7 +146,7 @@ const VideoComparison = ({ coachVideo, playerVideo, comparisonVideo, onAnalysisC
       if (playerVideoRef.current) {
         playerVideoRef.current.currentTime = coachVideoRef.current.currentTime;
       }
-      if (comparisonVideoRef.current) {
+      if (comparisonVideoRef.current && normalVideoUrl) {
         comparisonVideoRef.current.currentTime = coachVideoRef.current.currentTime;
       }
     }
@@ -178,7 +178,7 @@ const VideoComparison = ({ coachVideo, playerVideo, comparisonVideo, onAnalysisC
       if (playerVideoRef.current) {
         playerVideoRef.current.currentTime = 0;
       }
-      if (comparisonVideoRef.current) {
+      if (comparisonVideoRef.current && normalVideoUrl) {
         comparisonVideoRef.current.currentTime = 0;
       }
     }
@@ -366,7 +366,7 @@ const VideoComparison = ({ coachVideo, playerVideo, comparisonVideo, onAnalysisC
           </Grid>
 
           <Grid item xs={12} sx={{ backgroundColor: 'black', mt: 2, position: 'relative' }}>
-            {comparisonVideo ? (
+            {normalVideoUrl ? (
               <>
                 <Typography
                   variant="caption"
@@ -381,16 +381,15 @@ const VideoComparison = ({ coachVideo, playerVideo, comparisonVideo, onAnalysisC
                     zIndex: 1,
                   }}
                 >
-                  COMPARISON WITH SKELETONS
+                  NORMAL COMPARISON WITH SKELETONS
                 </Typography>
                 <video
                   ref={comparisonVideoRef}
-                  src={comparisonVideo}
+                  src={normalVideoUrl}
                   style={{ width: '100%', height: 'auto', objectFit: 'contain', display: showSkeleton ? 'block' : 'none' }}
                   controls={false}
                   muted
                   loading="lazy"
-                  onError={() => console.error('Failed to load comparison video:', comparisonVideo)}
                 />
               </>
             ) : (

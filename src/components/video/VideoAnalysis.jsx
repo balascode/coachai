@@ -85,8 +85,7 @@ const VideoAnalysis = ({ userRole }) => {
       console.log('Upload response:', data);
 
       if (data.success) {
-        const baseUrl = 'http://localhost:5000'; // Single base URL
-        const videoUrl = data.videoUrl; // Use the full URL from backend
+        const videoUrl = data.videoUrl;
         console.log(`Setting ${isCoach ? 'coach' : 'player'} video URL:`, videoUrl);
 
         if (isCoach) {
@@ -132,11 +131,7 @@ const VideoAnalysis = ({ userRole }) => {
       console.log('Analysis response:', data);
 
       if (data.success) {
-        const baseUrl = 'http://localhost:5000';
-        setAnalysisResults({
-          ...data,
-          comparisonVideoUrl: data.comparisonVideoUrl || null, // Use backend-provided URL
-        });
+        setAnalysisResults(data);
         handleNext();
       } else {
         throw new Error(data.message || 'Analysis failed');
@@ -179,7 +174,8 @@ const VideoAnalysis = ({ userRole }) => {
           <VideoComparison
             coachVideo={coachVideo.url}
             playerVideo={playerVideo.url}
-            comparisonVideo={analysisResults?.comparisonVideoUrl}
+            normalVideoUrl={analysisResults?.normalVideoUrl}
+            dynamicVideoUrl={analysisResults?.dynamicVideoUrl}
             onAnalysisComplete={handleAnalysisComplete}
             loading={loading.analysis}
           />
@@ -191,7 +187,7 @@ const VideoAnalysis = ({ userRole }) => {
           <AnalysisReport
             results={analysisResults}
             userRole={userRole}
-            onReset={handleReset}
+            onReset={handleReset} // Pass onReset prop
           />
         ) : (
           <Typography color="error">No results available. Please analyze.</Typography>
