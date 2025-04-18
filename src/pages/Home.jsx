@@ -16,7 +16,7 @@ const Home = () => {
             WebkitTextFillColor: 'transparent',
           }}
         >
-          Welcome to CoachAI
+          Welcome to Kreeda Mitra
         </Typography>
         <Typography variant="subtitle1" color="text.secondary" sx={{ mt: 2 }}>
           Optimize your sports performance with AI-driven analysis

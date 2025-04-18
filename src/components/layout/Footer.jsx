@@ -28,11 +28,11 @@ const Footer = () => {
                 WebkitTextFillColor: 'transparent',
               }}
             >
-              CoachAI
+              Kreeda Mitra
             </Typography>
           </Box>
           <Typography variant="body2" color="text.secondary">
-            © {new Date().getFullYear()} CoachAI. All rights reserved.
+            © {new Date().getFullYear()} Kreeda MItra. All rights reserved.
           </Typography>
         </Box>
       </Container>

@@ -143,7 +143,7 @@ const Sidebar = ({ userRole }) => {
                   fontSize: isSmallScreen ? '1.2rem' : '1.5rem',
                 }}
               >
-                CoachAI
+                Kreeda Mitra
               </Typography>
             </Box>
             {!isMobile && (
